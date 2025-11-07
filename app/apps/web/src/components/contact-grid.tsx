@@ -107,6 +107,7 @@ export function ContactGrid({
             <div
               key={contact.id}
               onClick={() => onContactClick?.(contact.contactClerkId, contact.isParalyzed ?? undefined)}
+              data-gaze-activate="contact-card"
               className="relative cursor-pointer flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800 group"
             >
               <div className="absolute inset-0 m-5 bg-white dark:bg-gray-900 rounded-2xl border-4 border-transparent group-hover:border-blue-500 group-hover:shadow-xl group-hover:scale-[1.02] transition-all duration-300 flex flex-col items-center justify-center p-6">
@@ -146,6 +147,7 @@ export function ContactGrid({
         {showNextTile && onNext ? (
           <div
             onClick={onNext}
+            data-gaze-activate="next-button"
             className="relative cursor-pointer flex flex-col items-center justify-center group border border-gray-200 dark:border-gray-800"
           >
             <div className="absolute inset-0 m-5 bg-blue-500 group-hover:bg-blue-600 group-hover:scale-[1.02] rounded-2xl flex flex-col items-center justify-center transition-all duration-300 group-hover:shadow-xl">
