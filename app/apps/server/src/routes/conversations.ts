@@ -1,6 +1,6 @@
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { db } from "../db/connections";
-import { conversationsTable, messagesTable } from "../db/schema";
+import { conversationsTable, messagesTable, usersTable } from "../db/schema";
 import { eq, or, and, desc } from "drizzle-orm";
 import { clerkClient } from "@clerk/clerk-sdk-node";
 
@@ -36,6 +36,7 @@ const OtherUserSchema = z.object({
   fullName: z.string().nullable(),
   profileImage: z.string().nullable(),
   nickname: z.string().nullable(),
+  isParalyzed: z.boolean(),
 });
 
 const MessagesResponseSchema = z.object({
@@ -227,16 +228,25 @@ conversationsRouter.openapi(getMessagesRoute, async (c) => {
     ? conversation.user2ClerkId 
     : conversation.user1ClerkId;
 
-  // Fetch contact's user data from Clerk
+  // Fetch contact's user data from Clerk and database
   let otherUser = null;
   try {
     const clerkUser = await clerkClient.users.getUser(contactId);
+    
+    // Fetch user's isParalyzed status from database
+    const [dbUser] = await db
+      .select({ isParalyzed: usersTable.isParalyzed })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, contactId))
+      .limit(1);
+    
     otherUser = {
       clerkId: clerkUser.id,
       username: clerkUser.username,
       fullName: clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null,
       profileImage: clerkUser.imageUrl,
       nickname: clerkUser.username || clerkUser.firstName || clerkUser.fullName || null,
+      isParalyzed: dbUser?.isParalyzed || false,
     };
   } catch (error) {
     console.error("Failed to fetch contact user data:", error);
@@ -337,16 +347,25 @@ conversationsRouter.openapi(getMessagesByContactRoute, async (c) => {
   const limit = parseInt(c.req.query("limit") || "50");
   const offset = parseInt(c.req.query("offset") || "0");
 
-  // Fetch contact's user data from Clerk
+  // Fetch contact's user data from Clerk and database
   let otherUser = null;
   try {
     const clerkUser = await clerkClient.users.getUser(contactId);
+    
+    // Fetch user's isParalyzed status from database
+    const [dbUser] = await db
+      .select({ isParalyzed: usersTable.isParalyzed })
+      .from(usersTable)
+      .where(eq(usersTable.clerkId, contactId))
+      .limit(1);
+    
     otherUser = {
       clerkId: clerkUser.id,
       username: clerkUser.username,
       fullName: clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim() || null,
       profileImage: clerkUser.imageUrl,
       nickname: clerkUser.username || clerkUser.firstName || clerkUser.fullName || null,
+      isParalyzed: dbUser?.isParalyzed || false,
     };
   } catch (error) {
     console.error("Failed to fetch contact user data:", error);

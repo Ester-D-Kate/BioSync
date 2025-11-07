@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { MessageSquare, Mic, AlertCircle, Home } from "lucide-react";
+import { MessageSquare, Mic, AlertCircle, Home, Eye } from "lucide-react";
 
 export default function HomePage() {
 	const router = useRouter();
@@ -35,7 +35,17 @@ export default function HomePage() {
 			color: "from-green-500 to-green-600",
 			path: null,
 		},
+		{
+			id: "connect",
+			label: "Eye Tracker",
+			icon: Eye,
+			color: "from-cyan-500 to-blue-500",
+			path: "/connect",
+		},
 	];
+
+	const totalSlots = 6;
+	const emptySlots = Math.max(0, totalSlots - menuItems.length);
 
 	const handleCardClick = (path: string | null) => {
 		if (path) {
@@ -84,7 +94,7 @@ export default function HomePage() {
 				})}
 
 				{/* Empty slots */}
-				{[1, 2].map((i) => (
+				{Array.from({ length: emptySlots }, (_, i) => (
 					<div
 						key={`empty-${i}`}
 						className="relative flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800"

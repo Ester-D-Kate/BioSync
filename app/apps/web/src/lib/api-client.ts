@@ -54,4 +54,17 @@ export const api = {
       },
     });
   },
+
+  // Chat AI Options
+  getChatOptions: (message: string) => {
+    const endpointBase = process.env.NEXT_PUBLIC_TRANSCRIBE_API_URL || DEFAULT_TRANSCRIBE_URL;
+    const endpoint = new URL("/chat/options", endpointBase).toString();
+
+    return axios.post(endpoint, { message }, {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+  },
 };

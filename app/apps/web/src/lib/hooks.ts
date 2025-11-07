@@ -49,7 +49,9 @@ export const useMessages = (contactId: string, limit = 50, offset = 0) => {
 export const useInvalidateMessages = () => {
   const queryClient = useQueryClient();
   
-  return (contactId: string) => {
-    queryClient.invalidateQueries({ queryKey: ["messages", contactId] });
-  };
+  return (contactId: string) =>
+    queryClient.invalidateQueries({
+      queryKey: ["messages", contactId],
+      exact: false,
+    });
 };

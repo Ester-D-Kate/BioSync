@@ -6,7 +6,7 @@ import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSocket } from "@/components/socket-provider";
-import { useMessages, useInvalidateMessages } from "@/lib/hooks";
+import { useMessages, useInvalidateMessages, useMe } from "@/lib/hooks";
 import { useUser } from "@clerk/nextjs";
 
 interface Message {
@@ -27,6 +27,10 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
   const { user } = useUser();
   const { socket, isConnected, sendMessage, startTyping, stopTyping, onReceiveMessage, onMessageDelivered, onUserTyping, onMessageSent } = useSocket();
   const invalidateMessages = useInvalidateMessages();
+
+  // Fetch current user's profile to check if they are paralyzed
+  const { data: currentUserData } = useMe();
+  const isCurrentUserParalyzed = Boolean((currentUserData as any)?.isParalyzed);
 
   // Fetch messages from API (now includes otherUser data)
   const { data: messagesData, isLoading, error } = useMessages(contactId);
@@ -284,158 +288,249 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
         )}
       </div>
 
-      {/* Messages Area */}
-      <div
-        className={`flex-1 overflow-y-auto p-4 space-y-3 ${
-          isEyeTracking ? "max-h-[40vh]" : ""
-        }`}
-      >
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.senderId === user?.id ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`flex gap-2 max-w-[70%] ${
-                message.senderId === user?.id ? "flex-row-reverse" : ""
-              }`}
-            >
-              {message.senderId !== user?.id && (
-                <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                  {messagesData?.otherUser?.nickname?.slice(0, 2).toUpperCase() || contactId.slice(0, 2).toUpperCase()}
-                </div>
-              )}
-              <div>
+      {/* Split Layout for Paralyzed Users (current user is paralyzed) */}
+      {isCurrentUserParalyzed && !isEyeTracking ? (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left Side - Messages */}
+          <div className="flex flex-col w-1/2 min-w-[50vw] max-w-[50vw] border-r border-gray-200 dark:border-gray-800">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-gray-950">
+              {messages.map((message) => (
                 <div
-                  className={`rounded-xl px-4 py-3 shadow-sm ${
-                    message.senderId === user?.id
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                  key={message.id}
+                  className={`flex ${
+                    message.senderId === user?.id ? "justify-end" : "justify-start"
                   }`}
                 >
-                  <p className="text-base leading-relaxed">{message.content}</p>
-                </div>
-                <p className="text-xs text-gray-400 mt-1 px-2 flex items-center gap-1">
-                  {message.timestamp}
-                  {message.senderId === user?.id && message.isRead && (
-                    <span className="text-blue-500">✓✓</span>
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area or AI Options */}
-      {!isEyeTracking ? (
-        // Regular User Input
-        <div className="h-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex items-center px-4 gap-3">
-          <Input
-            value={inputMessage}
-            onChange={(e) => handleInputChange(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" && inputMessage.trim()) {
-                handleSendMessage(inputMessage);
-                stopTyping(contactId);
-              }
-            }}
-            placeholder="Type a message..."
-            className="flex-1 h-12 text-base"
-            disabled={!isConnected}
-          />
-          <Button
-            onClick={() => {
-              if (inputMessage.trim()) {
-                handleSendMessage(inputMessage);
-                stopTyping(contactId);
-              }
-            }}
-            disabled={!inputMessage.trim() || !isConnected}
-            size="icon"
-            className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600"
-          >
-            <Send className="w-5 h-5" />
-          </Button>
-        </div>
-      ) : (
-        // Eye-Tracking AI Options
-        <div className="flex-1 bg-gray-50 dark:bg-gray-900 p-6">
-          <div className="grid grid-cols-2 gap-5 h-full">
-            {aiOptions.map((option, index) => (
-              <button
-                key={index}
-                onMouseEnter={() => handleOptionHover(index, true)}
-                onMouseLeave={() => handleOptionHover(index, false)}
-                onClick={() => handleSendMessage(option)}
-                className={`relative min-h-[180px] rounded-2xl p-6 text-white text-2xl font-bold shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${
-                  index === 0
-                    ? "bg-blue-500 hover:ring-4 hover:ring-blue-300"
-                    : index === 1
-                    ? "bg-green-500 hover:ring-4 hover:ring-green-300"
-                    : index === 2
-                    ? "bg-purple-500 hover:ring-4 hover:ring-purple-300"
-                    : "bg-orange-500 hover:ring-4 hover:ring-orange-300"
-                } ${selectedOption === index ? "scale-105 ring-4 ring-white" : ""}`}
-              >
-                {/* Number Badge with Dwell Progress */}
-                <div className="absolute top-4 left-4 w-12 h-12 rounded-full bg-white bg-opacity-30 flex items-center justify-center text-3xl font-black">
-                  {dwellProgress[index] > 0 && (
-                    <svg
-                      className="absolute inset-0 w-12 h-12 -rotate-90"
-                      viewBox="0 0 48 48"
-                    >
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        stroke="white"
-                        strokeWidth="4"
-                        fill="none"
-                        strokeDasharray={`${2 * Math.PI * 20}`}
-                        strokeDashoffset={`${
-                          2 * Math.PI * 20 * (1 - dwellProgress[index] / 100)
+                  <div
+                    className={`flex gap-2 max-w-[70%] ${
+                      message.senderId === user?.id ? "flex-row-reverse" : ""
+                    }`}
+                  >
+                    {message.senderId !== user?.id && (
+                      <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {messagesData?.otherUser?.nickname?.slice(0, 2).toUpperCase() || contactId.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div
+                        className={`rounded-xl px-4 py-3 shadow-sm ${
+                          message.senderId === user?.id
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                         }`}
-                        className="transition-all duration-100"
-                      />
-                    </svg>
-                  )}
-                  {index + 1}
-                </div>
-
-                {/* Checkmark Animation */}
-                {selectedOption === index && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center animate-bounce">
-                      <svg
-                        className="w-12 h-12 text-green-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
+                        <p className="text-base leading-relaxed">{message.content}</p>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1 px-2 flex items-center gap-1">
+                        {message.timestamp}
+                        {message.senderId === user?.id && message.isRead && (
+                          <span className="text-blue-500">✓✓</span>
+                        )}
+                      </p>
                     </div>
                   </div>
-                )}
-
-                {/* Option Text */}
-                <div className="flex items-center justify-center h-full text-center px-4">
-                  {option}
                 </div>
-              </button>
-            ))}
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="h-24 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex items-center px-6 gap-4">
+              <Input
+                value={inputMessage}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && inputMessage.trim()) {
+                    handleSendMessage(inputMessage);
+                    stopTyping(contactId);
+                  }
+                }}
+                placeholder="Type a message..."
+                className="flex-1 h-14 text-base"
+                disabled={!isConnected}
+              />
+              <Button
+                onClick={() => {
+                  if (inputMessage.trim()) {
+                    handleSendMessage(inputMessage);
+                    stopTyping(contactId);
+                  }
+                }}
+                disabled={!inputMessage.trim() || !isConnected}
+                size="icon"
+                className="w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Right Side - AI Response Button */}
+          <div className="w-1/2 min-w-[50vw] max-w-[50vw] border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex">
+            <Button
+              onClick={() => router.push(`/chat/${contactId}/airesponses`)}
+              className="w-full h-full rounded-none bg-linear-to-br from-purple-500 to-blue-500 hover:opacity-90 text-white text-3xl font-bold tracking-wide"
+            >
+              AI Response Options
+            </Button>
           </div>
         </div>
+      ) : (
+        <>
+          {/* Messages Area */}
+          <div
+            className={`flex-1 overflow-y-auto p-4 space-y-3 ${
+              isEyeTracking ? "max-h-[40vh]" : ""
+            }`}
+          >
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.senderId === user?.id ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`flex gap-2 max-w-[70%] ${
+                    message.senderId === user?.id ? "flex-row-reverse" : ""
+                  }`}
+                >
+                  {message.senderId !== user?.id && (
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                      {messagesData?.otherUser?.nickname?.slice(0, 2).toUpperCase() || contactId.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div
+                      className={`rounded-xl px-4 py-3 shadow-sm ${
+                        message.senderId === user?.id
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                      }`}
+                    >
+                      <p className="text-base leading-relaxed">{message.content}</p>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1 px-2 flex items-center gap-1">
+                      {message.timestamp}
+                      {message.senderId === user?.id && message.isRead && (
+                        <span className="text-blue-500">✓✓</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area or AI Options */}
+          {!isEyeTracking ? (
+            // Regular User Input
+            <div className="h-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 flex items-center px-4 gap-3">
+              <Input
+                value={inputMessage}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && inputMessage.trim()) {
+                    handleSendMessage(inputMessage);
+                    stopTyping(contactId);
+                  }
+                }}
+                placeholder="Type a message..."
+                className="flex-1 h-12 text-base"
+                disabled={!isConnected}
+              />
+              <Button
+                onClick={() => {
+                  if (inputMessage.trim()) {
+                    handleSendMessage(inputMessage);
+                    stopTyping(contactId);
+                  }
+                }}
+                disabled={!inputMessage.trim() || !isConnected}
+                size="icon"
+                className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600"
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
+          ) : (
+            // Eye-Tracking AI Options
+            <div className="flex-1 bg-gray-50 dark:bg-gray-900 p-6">
+              <div className="grid grid-cols-2 gap-5 h-full">
+                {aiOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    onMouseEnter={() => handleOptionHover(index, true)}
+                    onMouseLeave={() => handleOptionHover(index, false)}
+                    onClick={() => handleSendMessage(option)}
+                    className={`relative min-h-[180px] rounded-2xl p-6 text-white text-2xl font-bold shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${
+                      index === 0
+                        ? "bg-blue-500 hover:ring-4 hover:ring-blue-300"
+                        : index === 1
+                        ? "bg-green-500 hover:ring-4 hover:ring-green-300"
+                        : index === 2
+                        ? "bg-purple-500 hover:ring-4 hover:ring-purple-300"
+                        : "bg-orange-500 hover:ring-4 hover:ring-orange-300"
+                    } ${selectedOption === index ? "scale-105 ring-4 ring-white" : ""}`}
+                  >
+                    {/* Number Badge with Dwell Progress */}
+                    <div className="absolute top-4 left-4 w-12 h-12 rounded-full bg-white bg-opacity-30 flex items-center justify-center text-3xl font-black">
+                      {dwellProgress[index] > 0 && (
+                        <svg
+                          className="absolute inset-0 w-12 h-12 -rotate-90"
+                          viewBox="0 0 48 48"
+                        >
+                          <circle
+                            cx="24"
+                            cy="24"
+                            r="20"
+                            stroke="white"
+                            strokeWidth="4"
+                            fill="none"
+                            strokeDasharray={`${2 * Math.PI * 20}`}
+                            strokeDashoffset={`${
+                              2 * Math.PI * 20 * (1 - dwellProgress[index] / 100)
+                            }`}
+                            className="transition-all duration-100"
+                          />
+                        </svg>
+                      )}
+                      {index + 1}
+                    </div>
+
+                    {/* Checkmark Animation */}
+                    {selectedOption === index && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center animate-bounce">
+                          <svg
+                            className="w-12 h-12 text-green-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={3}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Option Text */}
+                    <div className="flex items-center justify-center h-full text-center px-4">
+                      {option}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
+
