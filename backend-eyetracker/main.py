@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import logging
 from api.process_audio import router as audio_router
 from api.chat_responses import router as chat_router
+from api.appliance_control import router as appliance_router, shutdown_mqtt
 from eye_tracking import router as eye_router, shutdown_tracker as shutdown_eye_tracker
 
 
@@ -28,6 +29,7 @@ app.add_middleware(
 app.include_router(audio_router, prefix="", tags=["audio"])
 app.include_router(chat_router, prefix="", tags=["chat"])
 app.include_router(eye_router, prefix="", tags=["eye-tracker"])
+app.include_router(appliance_router, prefix="/api")
 
 @app.get("/")
 async def health():
@@ -45,5 +47,6 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup bot MQTT client on shutdown"""
     shutdown_eye_tracker()
+    shutdown_mqtt()
     logger.info("👋 Goodbye!")
 
