@@ -255,6 +255,7 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
           variant="ghost"
           size="icon"
           onClick={() => router.push("/chat")}
+          data-gaze-activate
           className="w-10 h-10"
         >
           <ArrowLeft className="w-6 h-6" />
@@ -357,6 +358,7 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
                 }}
                 disabled={!inputMessage.trim() || !isConnected}
                 size="icon"
+                data-gaze-activate
                 className="w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600"
               >
                 <Send className="w-5 h-5" />
@@ -368,6 +370,7 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
           <div className="w-1/2 min-w-[50vw] max-w-[50vw] border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex">
             <Button
               onClick={() => router.push(`/chat/${contactId}/airesponses`)}
+              data-gaze-activate
               className="w-full h-full rounded-none bg-linear-to-br from-purple-500 to-blue-500 hover:opacity-90 text-white text-3xl font-bold tracking-wide"
             >
               AI Response Options
@@ -448,6 +451,7 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
                 }}
                 disabled={!inputMessage.trim() || !isConnected}
                 size="icon"
+                data-gaze-activate
                 className="w-12 h-12 rounded-full bg-blue-500 hover:bg-blue-600"
               >
                 <Send className="w-5 h-5" />
@@ -463,6 +467,7 @@ export default function ChatPage({ params }: { params: Promise<{ contactId: stri
                     onMouseEnter={() => handleOptionHover(index, true)}
                     onMouseLeave={() => handleOptionHover(index, false)}
                     onClick={() => handleSendMessage(option)}
+                    data-gaze-activate
                     className={`relative min-h-[180px] rounded-2xl p-6 text-white text-2xl font-bold shadow-lg transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${
                       index === 0
                         ? "bg-blue-500 hover:ring-4 hover:ring-blue-300"
