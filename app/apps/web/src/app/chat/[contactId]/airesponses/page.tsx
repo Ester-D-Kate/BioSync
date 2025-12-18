@@ -164,6 +164,7 @@ export default function AIResponsesPage({ params }: { params: Promise<{ contactI
       <button
         key={key}
         onClick={() => handleOptionClick(option)}
+        data-gaze-activate
         className="relative flex h-full w-full cursor-pointer flex-col items-center justify-center border border-gray-200 dark:border-gray-800 group"
       >
         <div
@@ -196,6 +197,7 @@ export default function AIResponsesPage({ params }: { params: Promise<{ contactI
       <div className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center px-4 gap-4">
         <button
           onClick={handlePrevious}
+          data-gaze-activate
           className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
@@ -219,6 +221,7 @@ export default function AIResponsesPage({ params }: { params: Promise<{ contactI
       <div className="grid grid-cols-3 grid-rows-2 h-[calc(100vh-4rem)] w-full gap-0">
         <button
           onClick={handlePrevious}
+          data-gaze-activate
           className="relative flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800 group"
         >
           <div className="absolute inset-0 m-5 bg-blue-600 hover:bg-blue-700 group-hover:scale-[1.02] rounded-2xl flex flex-col items-center justify-center transition-all duration-300 group-hover:shadow-xl text-white">
@@ -234,6 +237,7 @@ export default function AIResponsesPage({ params }: { params: Promise<{ contactI
 
         <button
           onClick={handleRetry}
+          data-gaze-activate
           className="relative flex flex-col items-center justify-center border border-gray-200 dark:border-gray-800 group"
         >
           <div className="absolute inset-0 m-5 bg-red-500 hover:bg-red-600 group-hover:scale-[1.02] rounded-2xl flex flex-col items-center justify-center transition-all duration-300 group-hover:shadow-xl text-white">
